@@ -1,0 +1,31 @@
+# Ignore everything by default
+*
+
+# But track these important configuration files
+!.gitignore
+!CLAUDE.md
+!settings.json
+
+# Track custom agents and commands
+!agents/
+!agents/*.md
+!commands/
+!commands/*.md
+
+# Never commit credentials or sensitive data
+.credentials.json
+
+# Ignore runtime/cache directories
+cache/
+debug/
+downloads/
+file-history/
+history.jsonl
+ide/
+plans/
+projects/
+shell-snapshots/
+stats-cache.json
+statsig/
+telemetry/
+todos/
