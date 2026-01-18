@@ -8,6 +8,18 @@
 - Automatically analyzes all changes and creates structured conventional commits
 - Usage: `/gac` or `/gac [optional custom instructions]`
 
+## Git Commit Style
+
+- informal lowercase
+- minimal punctuation
+- short and descriptive
+
+## Code Style
+
+- DRY and KISS first, always concise
+- limited comments, only when necessary
+- comments should be lowercase, informal, minimal punctuation
+
 ## General Preferences
 
 - Keep code changes minimal and focused
