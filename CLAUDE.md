@@ -8,6 +8,18 @@
 - Automatically analyzes all changes and creates structured conventional commits
 - Usage: `/gac` or `/gac [optional custom instructions]`
 
+## Git Commit Style
+
+- informal lowercase
+- minimal punctuation
+- short and descriptive
+
+## Code Style
+
+- DRY and KISS first, always concise
+- limited comments, only when necessary
+- comments should be lowercase, informal, minimal punctuation
+
 **`/trello-dev`** - Trello Development Workflow
 - Process Trello cards with full dev cycle: investigate → implement → simplify → review → commit → update Trello
 - Usage: `/trello-dev [board-name] [list-name] [card-numbers...]`

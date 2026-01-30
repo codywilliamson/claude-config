@@ -12,6 +12,10 @@
 !commands/
 !commands/*.md
 
+# Track sync scripts
+!scripts/
+!scripts/**
+
 # Never commit credentials or sensitive data
 .credentials.json
 
