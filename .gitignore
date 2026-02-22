@@ -6,11 +6,15 @@
 !CLAUDE.md
 !settings.json
 
-# Track custom agents and commands
+# Track custom agents, commands, hooks, and skills
 !agents/
 !agents/*.md
 !commands/
 !commands/*.md
+!hooks/
+!hooks/**
+!skills/
+!skills/**
 
 # Track sync scripts
 !scripts/

@@ -29,4 +29,9 @@ rsync -a \
   --exclude "ide/" \
   "$SOURCE_DIR/" "$TARGET_DIR/"
 
+# fix absolute paths in settings.json to match this machine
+if [ -f "$TARGET_DIR/settings.json" ]; then
+  sed -i "s|/home/[^/]*/\\.claude/|$TARGET_DIR/|g" "$TARGET_DIR/settings.json"
+fi
+
 echo "Synced $SOURCE_DIR -> $TARGET_DIR"

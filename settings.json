@@ -1,4 +1,17 @@
 {
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /home/shockbirds/.claude/hooks/pre-commit-validate.sh"
+          }
+        ]
+      }
+    ]
+  },
   "permissions": {
     "allow": [
       "Bash(npm run production:*)",
@@ -7,9 +20,6 @@
       "Bash(claude mcp add:*)",
       "Bash(claude mcp remove:*)",
       "mcp__trello__list_boards",
-      "Bash(powershell -Command \"Get-Content ''C:\\\\Users\\\\Cody\\\\.claude\\\\projects\\\\C--Users-Cody-source-spectacl3-webprojects-wordpress-holterpickguards-local-app-public-wp-content-themes-hp-main\\\\864ddc0a-b41d-4cf8-a7f9-ae2735160565\\\\tool-results\\\\mcp-trello-list_boards-1768946174030.txt'' | Select-String -Pattern ''HP-S3'' -Context 2,0\")",
-      "Bash(powershell -Command \"\\(Get-Content ''C:\\\\Users\\\\Cody\\\\.claude\\\\projects\\\\C--Users-Cody-source-spectacl3-webprojects-wordpress-holterpickguards-local-app-public-wp-content-themes-hp-main\\\\864ddc0a-b41d-4cf8-a7f9-ae2735160565\\\\tool-results\\\\mcp-trello-list_boards-1768946174030.txt'' -Raw\\) -match ''\"\"id\"\":\\\\s*\"\"\\([^\"\"]+\\)\"\"[^}]*\"\"name\"\":\\\\s*\"\"\\([^\"\"]*HP-S3[^\"\"]*\\)\"\"'' ; $matches\")",
-      "Bash(findstr:*)",
       "mcp__trello__list_workspaces",
       "mcp__trello__list_boards_in_workspace",
       "mcp__trello__get_active_board_info",
