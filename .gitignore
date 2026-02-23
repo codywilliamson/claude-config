@@ -5,6 +5,7 @@
 !.gitignore
 !CLAUDE.md
 !settings.json
+!statusline-command.sh
 
 # Track custom agents, commands, hooks, and skills
 !agents/

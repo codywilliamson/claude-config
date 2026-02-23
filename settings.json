@@ -1,4 +1,6 @@
 {
+  "includeCoAuthoredBy": false,
+  "model": "opus",
   "hooks": {
     "PreToolUse": [
       {
@@ -6,19 +8,27 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash /home/shockbirds/.claude/hooks/pre-commit-validate.sh"
+            "command": "bash __CLAUDE_HOME__/hooks/pre-commit-validate.sh"
           }
         ]
       }
     ]
   },
+  "statusLine": {
+    "type": "command",
+    "command": "bash __CLAUDE_HOME__/statusline-command.sh"
+  },
+  "enabledPlugins": {
+    "frontend-design@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": true,
+    "security-guidance@claude-code-plugins": true,
+    "feature-dev@claude-code-plugins": true,
+    "github@claude-plugins-official": true
+  },
   "permissions": {
     "allow": [
-      "Bash(npm run production:*)",
-      "Bash(npm run production:js-footer:*)",
-      "Bash(where:*)",
-      "Bash(claude mcp add:*)",
-      "Bash(claude mcp remove:*)",
       "mcp__trello__list_boards",
       "mcp__trello__list_workspaces",
       "mcp__trello__list_boards_in_workspace",
@@ -31,6 +41,5 @@
     ],
     "defaultMode": "acceptEdits"
   },
-  "model": "opus",
-  "includeCoAuthoredBy": false
+  "skipDangerousModePermissionPrompt": true
 }
