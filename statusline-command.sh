@@ -15,8 +15,8 @@ model=$(get_json "display_name")
 used=$(get_json "used_percentage")
 
 # normalize backslashes to forward slashes (windows)
-cwd="${cwd//\\//}"
-home="${HOME//\\//}"
+cwd=$(echo "$cwd" | tr '\\' '/' | sed 's|//\+|/|g')
+home=$(echo "$HOME" | tr '\\' '/' | sed 's|//\+|/|g')
 
 # shorten home prefix to ~, then truncate long paths
 if [[ "$cwd" == "$home"* ]]; then
