@@ -14,9 +14,13 @@ cwd=$(get_json "current_dir")
 model=$(get_json "display_name")
 used=$(get_json "used_percentage")
 
+# normalize backslashes to forward slashes (windows)
+cwd="${cwd//\\//}"
+home="${HOME//\\//}"
+
 # shorten home prefix to ~, then truncate long paths
-if [[ "$cwd" == "$HOME"* ]]; then
-  display_dir="~${cwd#$HOME}"
+if [[ "$cwd" == "$home"* ]]; then
+  display_dir="~${cwd#$home}"
 else
   display_dir="${cwd:-(unknown)}"
 fi
