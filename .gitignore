@@ -3,6 +3,7 @@
 
 # But track these important configuration files
 !.gitignore
+!README.md
 !CLAUDE.md
 !settings.json
 !keybindings.json
