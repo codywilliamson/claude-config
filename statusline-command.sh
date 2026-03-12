@@ -26,8 +26,11 @@ else
 fi
 
 # ellipsis for deep paths — keep last 2 segments
-IFS='/' read -ra parts <<< "$display_dir"
-if [ "${#parts[@]}" -gt 3 ]; then
+# strip leading / or ~ to avoid empty elements, then split
+stripped="${display_dir#\~/}"
+stripped="${stripped#/}"
+IFS='/' read -ra parts <<< "$stripped"
+if [ "${#parts[@]}" -gt 2 ]; then
   display_dir="…/${parts[-2]}/${parts[-1]}"
 fi
 
