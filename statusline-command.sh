@@ -14,11 +14,17 @@ cwd=$(get_json "current_dir")
 model=$(get_json "display_name")
 used=$(get_json "used_percentage")
 
-# shorten home prefix to ~
+# shorten home prefix to ~, then truncate long paths
 if [[ "$cwd" == "$HOME"* ]]; then
   display_dir="~${cwd#$HOME}"
 else
   display_dir="${cwd:-(unknown)}"
+fi
+
+# ellipsis for deep paths — keep last 2 segments
+IFS='/' read -ra parts <<< "$display_dir"
+if [ "${#parts[@]}" -gt 3 ]; then
+  display_dir="…/${parts[-2]}/${parts[-1]}"
 fi
 
 # git branch

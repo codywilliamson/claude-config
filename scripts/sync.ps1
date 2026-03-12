@@ -86,9 +86,8 @@ if (Test-Path $settingsPath) {
 
   # fix hardcoded paths from other machines
   $content = $content -replace '/home/[^/]*/\.claude', $jsonPath
-  $content = $content -replace '/Users/[^/]*/\.claude', $jsonPath
+  $content = $content -replace '[A-Z]:/Users/[^/]*/\.claude', $jsonPath
   $content = $content -replace 'C:\\Users\\[^\\]*\\.claude', $jsonPath
-  $content = $content -replace 'C:/Users/[^/]*/\.claude', $jsonPath
 
   Set-Content $settingsPath $content -NoNewline
   Ok "fixed paths in settings.json"

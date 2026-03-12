@@ -58,7 +58,7 @@ if [ -f "$TARGET_DIR/settings.json" ]; then
   sed -i "s|__CLAUDE_HOME__|$TARGET_DIR|g" "$TARGET_DIR/settings.json"
   # also fix any hardcoded paths from other machines
   sed -i "s|/home/[^/]*/\.claude|$TARGET_DIR|g" "$TARGET_DIR/settings.json"
-  sed -i "s|/Users/[^/]*/\.claude|$TARGET_DIR|g" "$TARGET_DIR/settings.json"
+  sed -i "s|[A-Z]:/Users/[^/]*/\.claude|$TARGET_DIR|g" "$TARGET_DIR/settings.json"
   sed -i "s|C:\\\\Users\\\\[^\\\\]*\\\\.claude|$TARGET_DIR|g" "$TARGET_DIR/settings.json"
   ok "fixed paths in settings.json"
 fi
