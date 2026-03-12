@@ -34,7 +34,7 @@ if (-not (Test-Path $TargetDir)) {
 }
 
 # --- step 3: sync tracked config files ---
-$syncItems = @("CLAUDE.md", "settings.json", "statusline-command.sh", "agents", "commands", "hooks", "skills")
+$syncItems = @("CLAUDE.md", "settings.json", "keybindings.json", "statusline-command.sh", "agents", "commands", "hooks", "skills")
 
 foreach ($item in $syncItems) {
   $src = Join-Path $RepoDir $item
@@ -111,6 +111,10 @@ if ($claudeCmd) {
     @{ repo = "anthropics/claude-plugins-official"; name = "claude-md-management" },
     @{ repo = "anthropics/claude-plugins-official"; name = "superpowers" },
     @{ repo = "anthropics/claude-plugins-official"; name = "github" },
+    @{ repo = "anthropics/claude-plugins-official"; name = "ralph-loop" },
+    @{ repo = "anthropics/claude-plugins-official"; name = "code-simplifier" },
+    @{ repo = "anthropics/claude-plugins-official"; name = "playwright" },
+    @{ repo = "anthropics/claude-plugins-official"; name = "agent-sdk-dev" },
     @{ repo = "anthropics/claude-code"; name = "security-guidance" },
     @{ repo = "anthropics/claude-code"; name = "feature-dev" }
   )

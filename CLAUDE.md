@@ -10,9 +10,12 @@
 
 ## Git Commit Style
 
-- informal lowercase
-- minimal punctuation
+- **always use conventional commits** — `type: description`
+- types: `feat`, `fix`, `chore`, `ci`, `test`, `refactor`, `docs`, `style`, `perf`, `build`
+- informal lowercase, minimal punctuation
 - short and descriptive
+- no scope unless it adds clarity (e.g. `fix(api): ...`)
+- body only when the "why" isn't obvious from the subject
 
 ## Code Style
 

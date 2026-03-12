@@ -31,7 +31,7 @@ mkdir -p "$TARGET_DIR"
 
 # --- step 3: sync tracked config files ---
 # these are the only dirs/files we care about from the repo
-SYNC_ITEMS=(CLAUDE.md settings.json statusline-command.sh agents commands hooks skills)
+SYNC_ITEMS=(CLAUDE.md settings.json keybindings.json statusline-command.sh agents commands hooks skills)
 
 for item in "${SYNC_ITEMS[@]}"; do
   src="$REPO_DIR/$item"
@@ -77,6 +77,10 @@ if command -v claude &>/dev/null; then
     "anthropics/claude-plugins-official:claude-md-management"
     "anthropics/claude-plugins-official:superpowers"
     "anthropics/claude-plugins-official:github"
+    "anthropics/claude-plugins-official:ralph-loop"
+    "anthropics/claude-plugins-official:code-simplifier"
+    "anthropics/claude-plugins-official:playwright"
+    "anthropics/claude-plugins-official:agent-sdk-dev"
     "anthropics/claude-code:security-guidance"
     "anthropics/claude-code:feature-dev"
   )
