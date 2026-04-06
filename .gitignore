@@ -25,6 +25,7 @@
 
 # Never commit credentials or sensitive data
 .credentials.json
+.env.local
 
 # Ignore runtime/cache directories
 cache/
