@@ -4,11 +4,10 @@
   "hooks": {
     "UserPromptSubmit": [
       {
-        "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "bash __CLAUDE_HOME__/hooks/prompt-refine.sh"
+            "command": "bash $HOME/.claude/hooks/prompt-refine.sh"
           }
         ]
       }
@@ -19,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash __CLAUDE_HOME__/hooks/pre-commit-validate.sh"
+            "command": "bash $HOME/.claude/hooks/pre-commit-validate.sh"
           }
         ]
       },
@@ -28,18 +27,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash __CLAUDE_HOME__/hooks/file-size-watchdog.sh"
+            "command": "bash $HOME/.claude/hooks/file-size-watchdog.sh"
           }
         ]
       }
     ],
     "Stop": [
       {
-        "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "bash __CLAUDE_HOME__/hooks/session-changelog.sh"
+            "command": "bash $HOME/.claude/hooks/session-changelog.sh"
           }
         ]
       }
@@ -47,7 +45,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "bash __CLAUDE_HOME__/statusline-command.sh"
+    "command": "bash $HOME/.claude/statusline-command.sh"
   },
   "enabledPlugins": {
     "frontend-design@claude-plugins-official": true,

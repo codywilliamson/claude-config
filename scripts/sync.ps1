@@ -73,24 +73,16 @@ foreach ($item in $syncItems) {
 
 Ok "synced config files"
 
-# --- step 4: fix machine-specific paths in settings.json ---
+# --- step 4: verify settings.json paths ---
+# settings.json uses $HOME which bash resolves at runtime — no replacement needed
+# clean up any legacy __CLAUDE_HOME__ placeholders if present
 $settingsPath = Join-Path $TargetDir "settings.json"
-if (Test-Path $settingsPath) {
+if ((Test-Path $settingsPath) -and (Select-String -Path $settingsPath -Pattern '__CLAUDE_HOME__' -Quiet)) {
   $content = Get-Content $settingsPath -Raw
-
-  # normalize target path for json (forward slashes)
   $jsonPath = $TargetDir -replace '\\', '/'
-
-  # replace placeholder
   $content = $content -replace '__CLAUDE_HOME__', $jsonPath
-
-  # fix hardcoded paths from other machines
-  $content = $content -replace '/home/[^/]*/\.claude', $jsonPath
-  $content = $content -replace '[A-Z]:/Users/[^/]*/\.claude', $jsonPath
-  $content = $content -replace 'C:\\Users\\[^\\]*\\.claude', $jsonPath
-
   Set-Content $settingsPath $content -NoNewline
-  Ok "fixed paths in settings.json"
+  Ok "migrated legacy path placeholders in settings.json"
 }
 
 # --- step 5: ensure .gitignore exists in target ---

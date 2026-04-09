@@ -52,15 +52,12 @@ done
 
 ok "synced config files"
 
-# --- step 4: fix machine-specific paths in settings.json ---
-if [ -f "$TARGET_DIR/settings.json" ]; then
-  # replace placeholder with actual claude home path
-  sed -i "s|__CLAUDE_HOME__|$TARGET_DIR|g" "$TARGET_DIR/settings.json"
-  # also fix any hardcoded paths from other machines
-  sed -i "s|/home/[^/]*/\.claude|$TARGET_DIR|g" "$TARGET_DIR/settings.json"
-  sed -i "s|[A-Z]:/Users/[^/]*/\.claude|$TARGET_DIR|g" "$TARGET_DIR/settings.json"
-  sed -i "s|C:\\\\Users\\\\[^\\\\]*\\\\.claude|$TARGET_DIR|g" "$TARGET_DIR/settings.json"
-  ok "fixed paths in settings.json"
+# --- step 4: verify settings.json paths ---
+# settings.json uses $HOME which bash resolves at runtime — no replacement needed
+# clean up any legacy __CLAUDE_HOME__ placeholders if present
+if [ -f "$TARGET_DIR/settings.json" ] && grep -q '__CLAUDE_HOME__' "$TARGET_DIR/settings.json" 2>/dev/null; then
+  sed -i "s|\\\$HOME/\\.claude|$TARGET_DIR|g; s|__CLAUDE_HOME__|$TARGET_DIR|g" "$TARGET_DIR/settings.json"
+  ok "migrated legacy path placeholders in settings.json"
 fi
 
 # --- step 5: ensure .gitignore exists in target ---

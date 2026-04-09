@@ -4,30 +4,29 @@
 # just local aspell + heuristics.
 # cross-platform: linux, macos, windows (git bash / msys2)
 
+set -o pipefail 2>/dev/null || true
+
 LOG_DIR="$HOME/.claude/logs"
 LOG_FILE="$LOG_DIR/prompt-refine.log"
-mkdir -p "$LOG_DIR"
+mkdir -p "$LOG_DIR" 2>/dev/null
 
 # claude code passes hook input via stdin as json
-INPUT=$(cat 2>/dev/null) || exit 0
-PROMPT=$(echo "$INPUT" | jq -r '.prompt // empty' 2>/dev/null) || exit 0
+INPUT=$(cat 2>/dev/null || true)
+[ -z "$INPUT" ] && exit 0
+
+PROMPT=$(echo "$INPUT" | jq -r '.prompt // empty' 2>/dev/null || true)
 
 # skip empty or unparseable prompts
-if [ -z "$PROMPT" ]; then
-  exit 0
-fi
+[ -z "$PROMPT" ] && exit 0
 
-# strip leading/trailing whitespace (portable)
 WORD_COUNT=$(echo "$PROMPT" | wc -w | tr -d ' ')
-if [ "$WORD_COUNT" -lt 6 ]; then
-  exit 0
-fi
+[ "${WORD_COUNT:-0}" -lt 6 ] && exit 0
 
 # skip prompts that are mostly code (backticks, indentation)
 CODE_LINES=$(echo "$PROMPT" | grep -cE '^\s{4,}|^```|^`' 2>/dev/null || echo 0)
 TOTAL_LINES=$(echo "$PROMPT" | wc -l | tr -d ' ')
-if [ "$TOTAL_LINES" -gt 0 ]; then
-  CODE_RATIO=$(awk "BEGIN {printf \"%.2f\", $CODE_LINES / $TOTAL_LINES}")
+if [ "${TOTAL_LINES:-1}" -gt 0 ]; then
+  CODE_RATIO=$(awk "BEGIN {printf \"%.2f\", ${CODE_LINES:-0} / ${TOTAL_LINES:-1}}")
   if awk "BEGIN {exit !($CODE_RATIO > 0.5)}"; then
     exit 0
   fi
@@ -35,22 +34,19 @@ fi
 
 # check for aspell — skip refinement if not installed
 if ! command -v aspell &>/dev/null; then
-  TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
   {
-    echo "--- $TIMESTAMP ---"
+    echo "--- $(date '+%Y-%m-%d %H:%M:%S') ---"
     echo "triggered: SKIP (aspell not found) | words: $WORD_COUNT"
     echo "prompt: $PROMPT"
     echo ""
-  } >> "$LOG_FILE"
+  } >> "$LOG_FILE" 2>/dev/null
   exit 0
 fi
 
-# count misspelled words using aspell
 MISSPELLED=$(echo "$PROMPT" | aspell list --lang=en 2>/dev/null | wc -l | tr -d ' ')
 
-# calculate typo ratio
-if [ "$WORD_COUNT" -gt 0 ]; then
-  TYPO_RATIO=$(awk "BEGIN {printf \"%.2f\", $MISSPELLED / $WORD_COUNT}")
+if [ "${WORD_COUNT:-0}" -gt 0 ]; then
+  TYPO_RATIO=$(awk "BEGIN {printf \"%.2f\", ${MISSPELLED:-0} / $WORD_COUNT}")
 else
   TYPO_RATIO="0.00"
 fi
@@ -58,22 +54,21 @@ fi
 # threshold: >15% of words misspelled = messy prompt
 NEEDS_REFINE=$(awk "BEGIN {print ($TYPO_RATIO > 0.15) ? 1 : 0}")
 
-# get the misspelled words for the log (tr fallback if paste unavailable)
+# get the misspelled words for the log
 if command -v paste &>/dev/null; then
   MISSPELLED_WORDS=$(echo "$PROMPT" | aspell list --lang=en 2>/dev/null | sort -u | paste -sd, -)
 else
   MISSPELLED_WORDS=$(echo "$PROMPT" | aspell list --lang=en 2>/dev/null | sort -u | tr '\n' ',' | sed 's/,$//')
 fi
 
-# log every prompt evaluation
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 TRIGGERED=$( [ "$NEEDS_REFINE" -eq 1 ] && echo "YES" || echo "no" )
 {
   echo "--- $TIMESTAMP ---"
-  echo "triggered: $TRIGGERED | words: $WORD_COUNT | misspelled: $MISSPELLED ($TYPO_RATIO) | flagged: [$MISSPELLED_WORDS]"
+  echo "triggered: $TRIGGERED | words: $WORD_COUNT | misspelled: ${MISSPELLED:-0} ($TYPO_RATIO) | flagged: [$MISSPELLED_WORDS]"
   echo "prompt: $PROMPT"
   echo ""
-} >> "$LOG_FILE"
+} >> "$LOG_FILE" 2>/dev/null
 
 if [ "$NEEDS_REFINE" -eq 1 ]; then
   cat <<'HOOK_MSG'
@@ -84,8 +79,6 @@ if [ "$NEEDS_REFINE" -eq 1 ]; then
   }
 }
 HOOK_MSG
-  exit 0
 fi
 
-# clean prompt, pass through silently
 exit 0
