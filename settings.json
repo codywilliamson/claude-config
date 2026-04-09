@@ -2,6 +2,17 @@
   "includeCoAuthoredBy": false,
   "model": "opus",
   "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash __CLAUDE_HOME__/hooks/prompt-refine.sh"
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Bash",
@@ -9,6 +20,26 @@
           {
             "type": "command",
             "command": "bash __CLAUDE_HOME__/hooks/pre-commit-validate.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash __CLAUDE_HOME__/hooks/file-size-watchdog.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash __CLAUDE_HOME__/hooks/session-changelog.sh"
           }
         ]
       }
