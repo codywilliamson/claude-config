@@ -13,7 +13,7 @@ portable [claude code](https://docs.anthropic.com/en/docs/claude-code) config �
 | `CLAUDE.md` | global instructions — code style, git conventions, debugging workflow |
 | `settings.json` | model, permissions, hooks, statusline config (uses `$HOME` for portability) |
 | `keybindings.json` | keyboard shortcuts |
-| `statusline-command.sh` | renders path, git branch, model, and context usage in the statusline |
+| `statusline-command.sh` | renders path, branch, model, session cost/time, commits today, and a context bar with mood emoji |
 | `commands/gac.md` | `/gac` — analyzes changes and creates conventional commits |
 | `skills/deploy/` | `/deploy` — pre-deploy validation (typecheck, lint, test, build, push) |
 | `skills/pr/` | `/pr` — creates well-structured pull requests from branch history |
@@ -48,12 +48,18 @@ logs live at `~/.claude/logs/`. use `/prompt-refine` to audit the prompt refinem
 ## statusline
 
 ```
-…/dev/claude-config (master) Opus 4.6 ctx:16%
-│                    │        │        └─ context window usage (yellow at 80%+)
-│                    │        └─ current model
-│                    └─ git branch
-└─ truncated working directory (last 2 segments)
+ …/dev/claude-config ❯  master ❯  Opus 4.8 ❯  $0.42 ❯  3m ❯  2 ❯ ▓▓▓▓▓▓░░░░ 62% 😅
+ │                       │          │           │        │      │    │
+ │                       │          │           │        │      │    └─ context bar (green→yellow→red) + mood emoji (😎🙂😅😰🔥)
+ │                       │          │           │        │      └─ commits made today (hidden when 0)
+ │                       │          │           │        └─ session elapsed time
+ │                       │          │           └─ session cost in usd (hidden until reported)
+ │                       │          └─ current model
+ │                       └─ git branch
+ └─ truncated working directory (last 2 segments)
 ```
+
+requires a nerd font for the glyphs. data-bearing segments (cost, time, commits) hide themselves when empty/zero, so a fresh session stays clean.
 
 ## setup
 
