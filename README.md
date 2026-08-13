@@ -10,13 +10,15 @@ portable [claude code](https://docs.anthropic.com/en/docs/claude-code) config �
 
 | path | what it does |
 |------|-------------|
-| `CLAUDE.md` | global instructions — code style, git conventions, debugging workflow |
+| `CLAUDE.md` | global instructions — writing style, code style, git conventions, debugging workflow |
 | `settings.json` | model, permissions, hooks, statusline config (uses `$HOME` for portability) |
 | `keybindings.json` | keyboard shortcuts |
 | `statusline-command.sh` | renders path, branch, model, session cost/time, commits today, and a context bar with mood emoji |
 | `commands/gac.md` | `/gac` — analyzes changes and creates conventional commits |
 | `skills/deploy/` | `/deploy` — pre-deploy validation (typecheck, lint, test, build, push) |
-| `skills/pr/` | `/pr` — creates well-structured pull requests from branch history |
+| `skills/pr/` | `/pr` — git and gh mechanics for opening a PR from branch history |
+| `skills/writing-pr-descriptions/` | prose rules for PR titles and bodies (used by `/pr`) |
+| `skills/writing-pr-comments/` | prose rules for code review comments |
 | `skills/prompt-refine/` | `/prompt-refine` — audit prompt refinement hook log, tune heuristics |
 | `skills/wiki/` | `/wiki` — persistent knowledge base using the karpathy llm wiki pattern |
 | `skills/design-system/` | `/design-system` — curated UI design systems (stripe, supabase, resend, spotify) |
@@ -135,7 +137,9 @@ claude-config/
 │   ├── design-system/
 │   ├── pr/
 │   ├── prompt-refine/
-│   └── wiki/
+│   ├── wiki/
+│   ├── writing-pr-comments/
+│   └── writing-pr-descriptions/
 └── scripts/
     ├── setup.sh / setup.ps1
     ├── sync.sh / sync.ps1
