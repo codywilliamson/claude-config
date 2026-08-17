@@ -52,12 +52,21 @@ function Check-Prerequisites {
     $missing += "git"
   }
 
+  # required — scripts\sync.mjs runs on node
+  $nodeCmd = Get-Command node -ErrorAction SilentlyContinue
+  if ($nodeCmd) {
+    Ok "node $(node --version)"
+  } else {
+    Err "node not found — scripts\sync.mjs needs it"
+    Err "  claude code installs via npm, so node is usually already present"
+    $missing += "node"
+  }
+
   # recommended
-  foreach ($cmd in @("node", "pnpm", "claude")) {
+  foreach ($cmd in @("pnpm", "claude")) {
     $found = Get-Command $cmd -ErrorAction SilentlyContinue
     if ($found) {
       $ver = switch ($cmd) {
-        "node"   { node --version }
         "pnpm"   { pnpm --version }
         "claude" { try { claude --version } catch { "installed" } }
       }
@@ -211,31 +220,6 @@ WIKI_VAULT_PATH=$WikiVaultPath
   Ok "wrote $envFile"
 }
 
-# ── update CLAUDE.md with vault path ────────────────────────────
-
-function Patch-ClaudeMd {
-  if (-not $WikiVaultPath) { return }
-
-  $claudeMd = Join-Path $script:RepoDir "CLAUDE.md"
-  if (-not (Test-Path $claudeMd)) { return }
-
-  $content = Get-Content $claudeMd -Raw
-  if ($content -match "WIKI_VAULT_PATH") {
-    Ok "CLAUDE.md already has WIKI_VAULT_PATH reference"
-  } else {
-    $addition = @"
-
-## Wiki
-
-Obsidian vault is at: ``$WikiVaultPath``
-Wiki pages live in: ``$WikiVaultPath/wiki/``
-Set ``WIKI_VAULT_PATH=$WikiVaultPath`` for the wiki skill.
-"@
-    Add-Content $claudeMd $addition
-    Ok "added wiki vault path to CLAUDE.md"
-  }
-}
-
 # ── run first sync ──────────────────────────────────────────────
 
 function Run-FirstSync {
@@ -250,7 +234,7 @@ function Run-FirstSync {
   $env:CLAUDE_CONFIG_REPO = $script:RepoDir
   if (-not $env:CLAUDE_HOME) { $env:CLAUDE_HOME = Join-Path $HOME ".claude" }
 
-  & $syncScript
+  & $syncScript push
 }
 
 # ── print summary ───────────────────────────────────────────────
@@ -280,11 +264,13 @@ function Print-Summary {
   Write-Host "  3. try '/wiki ingest' to start your knowledge base"
   Write-Host "  4. try '/gac' after making changes for smart commits"
   Write-Host ""
-  Write-Host "to re-sync after editing the repo:"
-  Write-Host "  .\$($script:RepoDir)\scripts\sync.ps1"
+  Write-Host "day to day:"
+  Write-Host "  .\scripts\sync.ps1 status         what differs"
+  Write-Host "  .\scripts\sync.ps1 push --git     pull latest, apply it"
+  Write-Host "  .\scripts\sync.ps1 pull           capture local edits"
   Write-Host ""
-  Write-Host "to pull live config back into the repo:"
-  Write-Host "  bash $($script:RepoDir)/scripts/pull.sh"
+  Write-Host "machine-only settings go in $claudeHome\settings.local.json"
+  Write-Host "sync never overwrites it, and it always wins over the repo's base."
 }
 
 # ── main ────────────────────────────────────────────────────────
@@ -299,6 +285,5 @@ Check-Prerequisites
 Ensure-Repo
 Find-ObsidianVault
 Generate-Env
-Patch-ClaudeMd
 Run-FirstSync
 Print-Summary

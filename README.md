@@ -28,11 +28,11 @@ portable [claude code](https://docs.anthropic.com/en/docs/claude-code) config �
 | `hooks/pre-commit-validate.sh` | blocks commits if typecheck/build fails (TS, Go, C#) |
 | `hooks/file-size-watchdog.sh` | warns when writing files over 500 lines (1000 for markup/config) |
 | `hooks/session-changelog.sh` | logs session summary (branch, commits, dirty files) on stop |
+| `skills/debug/` | `/debug` — investigate before fixing, hypothesis-first debugging |
+| `scripts/sync.mjs` | the sync engine — `status`, `push`, `pull`. one implementation, all platforms |
+| `scripts/sync.sh` / `sync.ps1` | thin wrappers around `sync.mjs` |
 | `scripts/setup.sh` | first-time setup — detects os, finds obsidian vault, generates env, syncs (linux/mac/wsl) |
 | `scripts/setup.ps1` | first-time setup (windows/powershell) |
-| `scripts/sync.sh` | push config from repo to `~/.claude` (linux/mac/wsl) |
-| `scripts/sync.ps1` | push config from repo to `~/.claude` (windows/powershell) |
-| `scripts/pull.sh` | pull live config from `~/.claude` back into repo |
 
 ## hooks
 
@@ -81,8 +81,8 @@ setup detects your os, finds your obsidian vault (for the wiki skill), generates
 
 ### prerequisites
 
-- **required:** git, claude code cli
-- **recommended:** node, pnpm, rsync (linux/mac), aspell (for prompt refinement hook)
+- **required:** git, node (claude code installs via npm, so you almost certainly have it)
+- **recommended:** claude code cli, pnpm, aspell (for prompt refinement hook)
 
 install aspell if you want the prompt refinement hook:
 ```bash
@@ -96,23 +96,57 @@ brew install aspell
 pacman -S mingw-w64-x86_64-aspell
 ```
 
-### updating
+## syncing
+
+three commands, same on every platform (`sync.ps1` on windows):
 
 ```bash
-# capture changes from ~/.claude back into the repo:
-bash ~/dev/claude-config/scripts/pull.sh
-
-# apply repo changes to ~/.claude:
-bash ~/dev/claude-config/scripts/sync.sh
+./scripts/sync.sh status          # what differs, in both directions. changes nothing
+./scripts/sync.sh push            # repo -> ~/.claude
+./scripts/sync.sh pull            # ~/.claude -> repo, review with git diff
 ```
+
+sitting down at another machine, `push --git` does a `git pull --ff-only` first:
+
+```bash
+./scripts/sync.sh push --git
+```
+
+add `--dry-run` to any of them to print the plan without writing. `--no-plugins` skips the plugin install pass.
+
+### what sync will and won't touch
+
+**the repo owns named entries, nothing more.** the manifest is the top-level entries the repo actually has: each file in `agents/`, `commands/`, `hooks/`, `skills/`, plus `CLAUDE.md`, `keybindings.json`, and `statusline-command.sh`. anything else living in `~/.claude` is never read, moved, or deleted. that includes symlinked skills, skills you keep on one machine only, and every runtime directory.
+
+inside an owned entry sync mirrors exactly, so renaming a file inside `skills/pr/` propagates instead of leaving the old one behind. symlinks are skipped in both directions — they can't be clobbered on push and can't leak machine-specific paths into the repo on pull.
+
+### settings.json is generated, not copied
+
+this is the part that makes it work across machines. copying `settings.json` around means every sync wipes whatever that machine had.
+
+```
+repo/settings.json                shared base, committed
+  +  ~/.claude/settings.local.json  machine-only, gitignored
+  =  ~/.claude/settings.json        generated on every push
+```
+
+merge rules: objects merge deeply, local scalars win, and **hook arrays concatenate** so the repo's hooks and the machine's hooks both run. the live file is rebuilt from base + overlay every time rather than patched, so pushing ten times gives the same result as pushing once — hooks never accumulate.
+
+the first push on a machine splits whatever is already in `settings.json` into the overlay for you, and verifies the split round-trips before writing anything. if it can't reproduce your current file exactly, it refuses and tells you.
+
+pull deliberately does **not** push settings back. deciding which live key is shared and which is machine-only is exactly the guess that causes the damage, so pull reports drift and lets you place it yourself.
 
 ## customizing
 
 1. fork this repo
 2. edit `CLAUDE.md` with your preferences
-3. update `settings.json` — paths use `$HOME` which bash resolves at runtime
+3. update `settings.json` — paths use `$HOME` which resolves at runtime. machine-specific values belong in `~/.claude/settings.local.json` instead
 4. add commands in `commands/`, skills in `skills/`, agents in `agents/`
-5. run `sync.sh`
+5. run `./scripts/sync.sh push`
+
+## skills from elsewhere
+
+some of the skills in `~/.claude/skills` are symlinks into `~/.agents/skills` and are **not** managed by this repo — they come from [matt pocock's agent skills](https://github.com/mattpocock) (`codebase-design`, `diagnosing-bugs`, `domain-modeling`, `triage`, `to-spec`, `tdd`, `research`, `writing-for-agents`, and others). install them separately; sync leaves them alone by design.
 
 ## structure
 
@@ -133,6 +167,7 @@ claude-config/
 │   ├── prompt-refine.sh
 │   └── session-changelog.sh
 ├── skills/
+│   ├── debug/
 │   ├── deploy/
 │   ├── design-system/
 │   ├── pr/
@@ -141,7 +176,7 @@ claude-config/
 │   ├── writing-pr-comments/
 │   └── writing-pr-descriptions/
 └── scripts/
-    ├── setup.sh / setup.ps1
-    ├── sync.sh / sync.ps1
-    └── pull.sh
+    ├── sync.mjs            # the engine
+    ├── sync.sh / sync.ps1  # wrappers
+    └── setup.sh / setup.ps1
 ```

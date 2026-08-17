@@ -102,12 +102,11 @@ check_prerequisites() {
     fi
   done
 
-  # check for rsync (used by sync.sh)
-  if command -v rsync &>/dev/null; then
-    ok "rsync available"
-  else
-    warn "rsync not found — sync.sh needs it"
-    warn "  install: sudo apt install rsync  (or brew install rsync)"
+  # sync.mjs runs on node — hard requirement, not just recommended
+  if ! command -v node &>/dev/null; then
+    err "node not found — scripts/sync.mjs needs it"
+    err "  claude code installs via npm, so node is usually already present"
+    missing+=("node")
   fi
 
   if [ ${#missing[@]} -gt 0 ]; then
@@ -258,35 +257,6 @@ EOF
   ok "wrote $env_file"
 }
 
-# ── update CLAUDE.md with vault path ────────────────────────────
-
-patch_claude_md() {
-  if [ -z "${WIKI_VAULT_PATH:-}" ]; then
-    return
-  fi
-
-  local claude_md="$REPO_DIR/CLAUDE.md"
-  if [ ! -f "$claude_md" ]; then
-    return
-  fi
-
-  # check if there's already a wiki vault path set
-  if grep -q "WIKI_VAULT_PATH" "$claude_md" 2>/dev/null; then
-    ok "CLAUDE.md already has WIKI_VAULT_PATH reference"
-  else
-    # append wiki context to CLAUDE.md
-    cat >> "$claude_md" <<EOF
-
-## Wiki
-
-Obsidian vault is at: \`$WIKI_VAULT_PATH\`
-Wiki pages live in: \`$WIKI_VAULT_PATH/wiki/\`
-Set \`WIKI_VAULT_PATH=$WIKI_VAULT_PATH\` for the wiki skill.
-EOF
-    ok "added wiki vault path to CLAUDE.md"
-  fi
-}
-
 # ── run first sync ──────────────────────────────────────────────
 
 run_first_sync() {
@@ -298,11 +268,11 @@ run_first_sync() {
     return 1
   fi
 
-  # export env vars so sync.sh picks them up
+  # export env vars so sync picks them up
   export CLAUDE_CONFIG_REPO="$REPO_DIR"
   export CLAUDE_HOME="${CLAUDE_HOME:-$HOME/.claude}"
 
-  bash "$sync_script"
+  bash "$sync_script" push
 }
 
 # ── add env loader to shell rc ──────────────────────────────────
@@ -362,11 +332,13 @@ print_summary() {
   echo "  3. try '/wiki ingest' to start your knowledge base"
   echo "  4. try '/gac' after making changes for smart commits"
   printf "\n"
-  echo "to re-sync after editing the repo:"
-  echo "  bash $REPO_DIR/scripts/sync.sh"
+  echo "day to day:"
+  echo "  bash $REPO_DIR/scripts/sync.sh status         what differs"
+  echo "  bash $REPO_DIR/scripts/sync.sh push --git     pull latest, apply it"
+  echo "  bash $REPO_DIR/scripts/sync.sh pull           capture local edits"
   printf "\n"
-  echo "to pull live config back into the repo:"
-  echo "  bash $REPO_DIR/scripts/pull.sh"
+  echo "machine-only settings go in ${CLAUDE_HOME:-$HOME/.claude}/settings.local.json"
+  echo "sync never overwrites it, and it always wins over the repo's base."
 }
 
 # ── main ────────────────────────────────────────────────────────
@@ -383,7 +355,6 @@ main() {
   ensure_repo
   find_obsidian_vault
   generate_env
-  patch_claude_md
   run_first_sync
   setup_shell_env
   print_summary

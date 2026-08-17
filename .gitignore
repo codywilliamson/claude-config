@@ -28,6 +28,10 @@
 .credentials.json
 .env.local
 
+# Machine-local settings overlay — generated per machine, never shared.
+# sync.mjs merges this over the repo's settings.json to produce the live file.
+settings.local.json
+
 # Ignore runtime/cache directories
 cache/
 debug/
