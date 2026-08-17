@@ -20,7 +20,6 @@ portable [claude code](https://docs.anthropic.com/en/docs/claude-code) config �
 | `skills/writing-pr-descriptions/` | prose rules for PR titles and bodies (used by `/pr`) |
 | `skills/writing-pr-comments/` | prose rules for code review comments |
 | `skills/prompt-refine/` | `/prompt-refine` — audit prompt refinement hook log, tune heuristics |
-| `skills/wiki/` | `/wiki` — persistent knowledge base using the karpathy llm wiki pattern |
 | `skills/design-system/` | `/design-system` — curated UI design systems (stripe, supabase, resend, spotify) |
 | `agents/code-reviewer.md` | code review agent — design principles, bug detection, security |
 | `agents/code-simplifier.md` | refactoring agent — DRY/KISS cleanup, comment pruning |
@@ -31,7 +30,7 @@ portable [claude code](https://docs.anthropic.com/en/docs/claude-code) config �
 | `skills/debug/` | `/debug` — investigate before fixing, hypothesis-first debugging |
 | `scripts/sync.mjs` | the sync engine — `status`, `push`, `pull`. one implementation, all platforms |
 | `scripts/sync.sh` / `sync.ps1` | thin wrappers around `sync.mjs` |
-| `scripts/setup.sh` | first-time setup — detects os, finds obsidian vault, generates env, syncs (linux/mac/wsl) |
+| `scripts/setup.sh` | first-time setup — detects os, checks prerequisites, generates env, syncs (linux/mac/wsl) |
 | `scripts/setup.ps1` | first-time setup (windows/powershell) |
 
 ## hooks
@@ -77,7 +76,7 @@ bash ~/dev/claude-config/scripts/setup.sh
 ~/dev/claude-config/scripts/setup.ps1
 ```
 
-setup detects your os, finds your obsidian vault (for the wiki skill), generates a `.env.local`, and runs the first sync.
+setup detects your os, checks prerequisites, generates a `.env.local`, and runs the first sync.
 
 ### prerequisites
 
@@ -172,7 +171,6 @@ claude-config/
 │   ├── design-system/
 │   ├── pr/
 │   ├── prompt-refine/
-│   ├── wiki/
 │   ├── writing-pr-comments/
 │   └── writing-pr-descriptions/
 └── scripts/

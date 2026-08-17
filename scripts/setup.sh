@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # first-time setup for claude-config
-# detects os, checks prerequisites, finds obsidian vault, generates env, runs first sync
+# detects os, checks prerequisites, generates env, runs first sync
 #
 # usage:
 #   curl -fsSL https://raw.githubusercontent.com/codywilliamson/claude-config/main/scripts/setup.sh | bash
@@ -116,79 +116,6 @@ check_prerequisites() {
   fi
 }
 
-# ── find obsidian vault ─────────────────────────────────────────
-
-find_obsidian_vault() {
-  header "looking for obsidian vault"
-
-  local candidates=()
-
-  # common vault locations
-  local search_dirs=(
-    "$HOME/dev/notes"
-    "$HOME/Notes"
-    "$HOME/notes"
-    "$HOME/Documents"
-    "$HOME/Documents/Notes"
-    "$HOME/Documents/Obsidian"
-    "$HOME/Obsidian"
-    "$HOME/vaults"
-  )
-
-  for dir in "${search_dirs[@]}"; do
-    if [ -d "$dir" ]; then
-      # look for .obsidian dirs (indicates an obsidian vault)
-      while IFS= read -r -d '' vault; do
-        candidates+=("$(dirname "$vault")")
-      done < <(find "$dir" -maxdepth 3 -name ".obsidian" -type d -print0 2>/dev/null)
-    fi
-  done
-
-  if [ ${#candidates[@]} -eq 0 ]; then
-    warn "no obsidian vault found automatically"
-    prompt "enter your obsidian vault path (or press enter to skip):"
-    read -r vault_input
-    if [ -n "$vault_input" ]; then
-      vault_input="${vault_input/#\~/$HOME}"
-      if [ -d "$vault_input" ]; then
-        WIKI_VAULT_PATH="$vault_input"
-        ok "using vault: $WIKI_VAULT_PATH"
-      else
-        warn "path doesn't exist — skipping wiki vault config"
-        WIKI_VAULT_PATH=""
-      fi
-    else
-      WIKI_VAULT_PATH=""
-      warn "skipped — you can set WIKI_VAULT_PATH later in .env.local"
-    fi
-  elif [ ${#candidates[@]} -eq 1 ]; then
-    WIKI_VAULT_PATH="${candidates[0]}"
-    ok "found vault: $WIKI_VAULT_PATH"
-    prompt "use this vault? [Y/n]"
-    read -r confirm
-    if [[ "$confirm" =~ ^[Nn] ]]; then
-      prompt "enter your obsidian vault path:"
-      read -r vault_input
-      vault_input="${vault_input/#\~/$HOME}"
-      WIKI_VAULT_PATH="$vault_input"
-    fi
-  else
-    info "found ${#candidates[@]} vaults:"
-    for i in "${!candidates[@]}"; do
-      printf "  ${BOLD}%d)${NC} %s\n" "$((i + 1))" "${candidates[$i]}"
-    done
-    prompt "pick one (number) or enter a custom path:"
-    read -r choice
-    if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le "${#candidates[@]}" ]; then
-      WIKI_VAULT_PATH="${candidates[$((choice - 1))]}"
-    else
-      choice="${choice/#\~/$HOME}"
-      WIKI_VAULT_PATH="$choice"
-    fi
-    ok "using vault: $WIKI_VAULT_PATH"
-  fi
-}
-
 # ── ensure repo is cloned ──────────────────────────────────────
 
 ensure_repo() {
@@ -243,9 +170,6 @@ CLAUDE_HOME=$claude_home
 
 # where this repo lives
 CLAUDE_CONFIG_REPO=$REPO_DIR
-
-# obsidian vault path (used by wiki skill)
-WIKI_VAULT_PATH=${WIKI_VAULT_PATH:-}
 
 # project defaults — uncomment and edit as needed
 # DEFAULT_DESIGN_SYSTEM=stripe
@@ -317,9 +241,6 @@ print_summary() {
   printf "  ${BOLD}shell${NC}        %s\n" "$CURRENT_SHELL"
   printf "  ${BOLD}repo${NC}         %s\n" "$REPO_DIR"
   printf "  ${BOLD}claude home${NC}  %s\n" "${CLAUDE_HOME:-$HOME/.claude}"
-  if [ -n "${WIKI_VAULT_PATH:-}" ]; then
-    printf "  ${BOLD}wiki vault${NC}  %s\n" "$WIKI_VAULT_PATH"
-  fi
   printf "\n"
 
   info "config synced to ${CLAUDE_HOME:-$HOME/.claude}"
@@ -329,8 +250,7 @@ print_summary() {
   echo "next steps:"
   echo "  1. open a new terminal (or source $SHELL_RC)"
   echo "  2. run 'claude' in any project"
-  echo "  3. try '/wiki ingest' to start your knowledge base"
-  echo "  4. try '/gac' after making changes for smart commits"
+  echo "  3. try '/gac' after making changes for smart commits"
   printf "\n"
   echo "day to day:"
   echo "  bash $REPO_DIR/scripts/sync.sh status         what differs"
@@ -353,7 +273,6 @@ main() {
 
   check_prerequisites
   ensure_repo
-  find_obsidian_vault
   generate_env
   run_first_sync
   setup_shell_env
