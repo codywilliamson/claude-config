@@ -1,0 +1,27 @@
+name: Commitlint
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: commitlint-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  commitlint:
+    # pinned by SHA like every other action here: a tag can be moved, a commit
+    # cannot. bump this deliberately rather than tracking a branch.
+    uses: codywilliamson/commit-guard/.github/workflows/commitlint.yml@0336a55258a53ded414f4efea9192d5b6d84f63e # v0.2.2
+    with:
+      config: conventional
+      # smart: lint real commits, skip bot noise, fall back to the PR title
+      # when every commit in the range was skipped
+      pr-mode: smart
+    permissions:
+      contents: read
