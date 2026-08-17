@@ -1,0 +1,121 @@
+name: ci
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+# nothing gets a token unless a job asks for one
+permissions: {}
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: sync tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      # this config is meant to work on all three, and path handling and
+      # symlink support are exactly where a node script quietly stops being
+      # portable. the matrix is the only thing that actually proves it.
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+
+      # sync.mjs writes into a real home directory, so it gets the most coverage
+      - name: sync behaviour
+        run: node scripts/test-sync.mjs
+
+      - name: skill + agent frontmatter and context budget
+        run: node scripts/lint-skills.mjs
+
+      - name: json parses
+        run: node -e "for (const f of ['settings.json','keybindings.json']) { JSON.parse(require('fs').readFileSync(f,'utf8')); console.log('ok   '+f) }"
+
+      # the wrappers are what people actually type, so run each on its own
+      # platform rather than assuming a thin script can't break
+      - name: sh wrapper
+        if: runner.os != 'Windows'
+        run: ./scripts/sync.sh status
+
+      - name: powershell wrapper
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: .\scripts\sync.ps1 status
+
+  structure:
+    name: repo structure
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # a skill on disk that git never tracked is invisible to anyone cloning.
+      # this repo shipped for months with skills/debug/ silently gitignored.
+      - name: every skill is tracked
+        run: |
+          missing=0
+          for d in skills/*/; do
+            if ! git ls-files --error-unmatch "${d}SKILL.md" >/dev/null 2>&1; then
+              echo "✗ ${d}SKILL.md exists but is not tracked by git"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then exit 1; fi
+          echo "ok   all skills tracked"
+
+  shell:
+    name: shellcheck
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # hooks run on every prompt and tool call, so they get linted as strictly
+      # as anything else that executes on your machine
+      - name: shellcheck
+        run: |
+          shopt -s globstar nullglob
+          shellcheck --severity=warning **/*.sh
+
+      - name: bash syntax
+        run: |
+          shopt -s globstar nullglob
+          for f in **/*.sh; do bash -n "$f" && echo "ok   $f"; done
+
+  powershell:
+    name: psscriptanalyzer
+    # on windows, where these scripts actually run
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: analyze
+        shell: pwsh
+        run: |
+          Set-PSRepository PSGallery -InstallationPolicy Trusted
+          Install-Module PSScriptAnalyzer -Force -Scope CurrentUser
+          $issues = Invoke-ScriptAnalyzer -Path scripts -Recurse -Severity Error,Warning
+          if ($issues) { $issues | Format-Table -AutoSize; exit 1 }
+          Write-Host "ok   no findings"

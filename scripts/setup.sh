@@ -78,14 +78,12 @@ check_prerequisites() {
   local missing=()
 
   # required
-  for cmd in git; do
-    if command -v "$cmd" &>/dev/null; then
-      ok "$cmd $(${cmd} --version 2>&1 | head -1 | grep -oP '[\d]+\.[\d]+\.[\d]+' | head -1)"
-    else
-      err "$cmd not found"
-      missing+=("$cmd")
-    fi
-  done
+  if command -v git &>/dev/null; then
+    ok "git $(git --version 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)"
+  else
+    err "git not found"
+    missing+=("git")
+  fi
 
   # recommended
   for cmd in node pnpm claude; do

@@ -1,180 +1,102 @@
 # claude-config
 
-portable [claude code](https://docs.anthropic.com/en/docs/claude-code) config — settings, commands, agents, hooks, and skills synced across machines.
+[![ci](https://github.com/codywilliamson/claude-config/actions/workflows/ci.yml/badge.svg)](https://github.com/codywilliamson/claude-config/actions/workflows/ci.yml)
+[![security](https://github.com/codywilliamson/claude-config/actions/workflows/security.yml/badge.svg)](https://github.com/codywilliamson/claude-config/actions/workflows/security.yml)
 
-```
-…/dev/claude-config (master) Opus 4.6 ctx:16%
-```
+portable [claude code](https://docs.anthropic.com/en/docs/claude-code) config — instructions, settings, commands, agents, hooks and skills, kept in one repo and synced onto every machine you work from.
 
-## what's in the box
+runs on linux, macos and windows. the sync engine is a single node script rather than one implementation per platform, and CI runs the test suite on all three.
 
-| path | what it does |
-|------|-------------|
-| `CLAUDE.md` | global instructions — writing style, code style, git conventions, debugging workflow |
-| `settings.json` | model, permissions, hooks, statusline config (uses `$HOME` for portability) |
-| `keybindings.json` | keyboard shortcuts |
-| `statusline-command.sh` | renders path, branch, model, session cost/time, commits today, and a context bar with mood emoji |
-| `commands/gac.md` | `/gac` — analyzes changes and creates conventional commits |
-| `skills/deploy/` | `/deploy` — pre-deploy validation (typecheck, lint, test, build, push) |
-| `skills/pr/` | `/pr` — git and gh mechanics for opening a PR from branch history |
-| `skills/writing-pr-descriptions/` | prose rules for PR titles and bodies (used by `/pr`) |
-| `skills/writing-pr-comments/` | prose rules for code review comments |
-| `skills/prompt-refine/` | `/prompt-refine` — audit prompt refinement hook log, tune heuristics |
-| `skills/design-system/` | `/design-system` — curated UI design systems (stripe, supabase, resend, spotify) |
-| `agents/code-reviewer.md` | code review agent — design principles, bug detection, security |
-| `agents/code-simplifier.md` | refactoring agent — DRY/KISS cleanup, comment pruning |
-| `hooks/prompt-refine.sh` | detects typo-heavy prompts via aspell and nudges claude to interpret before acting |
-| `hooks/pre-commit-validate.sh` | blocks commits if typecheck/build fails (TS, Go, C#) |
-| `hooks/file-size-watchdog.sh` | warns when writing files over 500 lines (1000 for markup/config) |
-| `hooks/session-changelog.sh` | logs session summary (branch, commits, dirty files) on stop |
-| `skills/debug/` | `/debug` — investigate before fixing, hypothesis-first debugging |
-| `scripts/sync.mjs` | the sync engine — `status`, `push`, `pull`. one implementation, all platforms |
-| `scripts/sync.sh` / `sync.ps1` | thin wrappers around `sync.mjs` |
-| `scripts/setup.sh` | first-time setup — detects os, checks prerequisites, generates env, syncs (linux/mac/wsl) |
-| `scripts/setup.ps1` | first-time setup (windows/powershell) |
+## layout
 
-## hooks
+the repo mirrors the shape of `~/.claude`, so a directory here lands at the same path there:
 
-four hooks run automatically during claude code sessions:
+- `CLAUDE.md` — global instructions applied to every session
+- `settings.json` — the shared base for permissions, hooks and statusline
+- `agents/`, `commands/`, `skills/` — things claude can invoke
+- `hooks/` — shell scripts claude code runs on session events
+- `scripts/` — sync engine, setup, and the checks CI runs
 
-| hook | event | what it does |
-|------|-------|-------------|
-| `prompt-refine.sh` | `UserPromptSubmit` | counts misspelled words via aspell; if >15% are typos, injects context asking claude to restate intent before acting. logs all evaluations to `~/.claude/logs/prompt-refine.log` |
-| `pre-commit-validate.sh` | `PreToolUse` (Bash) | intercepts `git commit` commands and runs typecheck/lint/build first (TS, Go, C#) |
-| `file-size-watchdog.sh` | `PreToolUse` (Write) | warns when a file exceeds 500 lines (1000 for html/markup/config). prompts for confirmation instead of blocking |
-| `session-changelog.sh` | `Stop` | logs timestamp, branch, uncommitted changes, and recent commits to `~/.claude/logs/session-changelog.log`. deduplicates by session id |
-
-logs live at `~/.claude/logs/`. use `/prompt-refine` to audit the prompt refinement log and tune thresholds.
-
-## statusline
-
-```
- …/dev/claude-config ❯  master ❯  Opus 4.8 ❯  $0.42 ❯  3m ❯  2 ❯ ▓▓▓▓▓▓░░░░ 62% 😅
- │                       │          │           │        │      │    │
- │                       │          │           │        │      │    └─ context bar (green→yellow→red) + mood emoji (😎🙂😅😰🔥)
- │                       │          │           │        │      └─ commits made today (hidden when 0)
- │                       │          │           │        └─ session elapsed time
- │                       │          │           └─ session cost in usd (hidden until reported)
- │                       │          └─ current model
- │                       └─ git branch
- └─ truncated working directory (last 2 segments)
-```
-
-requires a nerd font for the glyphs. data-bearing segments (cost, time, commits) hide themselves when empty/zero, so a fresh session stays clean.
+for what any of these currently contain, read the directory. this file deliberately doesn't keep an inventory, because an inventory in a README is a list that silently goes stale.
 
 ## setup
-
-### first time
 
 ```bash
 git clone https://github.com/codywilliamson/claude-config.git ~/dev/claude-config
 
-# linux/mac/wsl:
+# linux / macos / wsl
 bash ~/dev/claude-config/scripts/setup.sh
 
-# windows (powershell):
+# windows
 ~/dev/claude-config/scripts/setup.ps1
 ```
 
-setup detects your os, checks prerequisites, generates a `.env.local`, and runs the first sync.
+setup detects your platform, checks prerequisites, writes a gitignored `.env.local`, and runs the first sync.
 
-### prerequisites
-
-- **required:** git, node (claude code installs via npm, so you almost certainly have it)
-- **recommended:** claude code cli, pnpm, aspell (for prompt refinement hook)
-
-install aspell if you want the prompt refinement hook:
-```bash
-# linux (debian/ubuntu):
-sudo apt install aspell aspell-en
-
-# macos:
-brew install aspell
-
-# windows (msys2):
-pacman -S mingw-w64-x86_64-aspell
-```
+you need git and node. node is not really an extra ask — claude code installs through npm, so it's already there. the prompt-refinement hook additionally wants `aspell` on your PATH and quietly does nothing without it.
 
 ## syncing
 
-three commands, same on every platform (`sync.ps1` on windows):
+three commands, identical on every platform (`scripts/sync.ps1` on windows):
 
 ```bash
-./scripts/sync.sh status          # what differs, in both directions. changes nothing
-./scripts/sync.sh push            # repo -> ~/.claude
-./scripts/sync.sh pull            # ~/.claude -> repo, review with git diff
+./scripts/sync.sh status    # what differs, in both directions. writes nothing
+./scripts/sync.sh push      # repo -> ~/.claude
+./scripts/sync.sh pull      # ~/.claude -> repo, then review with git diff
 ```
 
-sitting down at another machine, `push --git` does a `git pull --ff-only` first:
-
-```bash
-./scripts/sync.sh push --git
-```
-
-add `--dry-run` to any of them to print the plan without writing. `--no-plugins` skips the plugin install pass.
+sitting down at another machine, `push --git` runs `git pull --ff-only` first so one command gets you current. `--dry-run` prints the plan without writing, and `--no-plugins` skips the plugin install pass.
 
 ### what sync will and won't touch
 
-**the repo owns named entries, nothing more.** the manifest is the top-level entries the repo actually has: each file in `agents/`, `commands/`, `hooks/`, `skills/`, plus `CLAUDE.md`, `keybindings.json`, and `statusline-command.sh`. anything else living in `~/.claude` is never read, moved, or deleted. that includes symlinked skills, skills you keep on one machine only, and every runtime directory.
+the repo owns named entries and nothing more. every top-level entry inside the mirrored directories is owned, along with the root config files. anything else living in `~/.claude` is never read, moved or deleted — that covers symlinked skills, skills you keep on one machine only, and every runtime and cache directory claude code maintains.
 
-inside an owned entry sync mirrors exactly, so renaming a file inside `skills/pr/` propagates instead of leaving the old one behind. symlinks are skipped in both directions — they can't be clobbered on push and can't leak machine-specific paths into the repo on pull.
+inside an owned entry it mirrors exactly, so renaming a file within a skill propagates instead of leaving the old copy behind. symlinks are skipped in both directions: they can't be clobbered on push, and they can't leak machine-specific paths into the repo on pull.
+
+the flip side is worth knowing. deleting a skill from the repo does **not** delete it from `~/.claude` on your other machines, because a removed entry isn't owned anymore. remove those by hand.
 
 ### settings.json is generated, not copied
 
-this is the part that makes it work across machines. copying `settings.json` around means every sync wipes whatever that machine had.
+this is the part that makes multiple machines survivable. copying `settings.json` around means every sync wipes whatever the other machine had configured.
 
 ```
-repo/settings.json                shared base, committed
-  +  ~/.claude/settings.local.json  machine-only, gitignored
-  =  ~/.claude/settings.json        generated on every push
+repo settings.json          shared base, committed
+  +  settings.local.json    machine-only, gitignored, lives in ~/.claude
+  =  ~/.claude/settings.json  generated on every push
 ```
 
-merge rules: objects merge deeply, local scalars win, and **hook arrays concatenate** so the repo's hooks and the machine's hooks both run. the live file is rebuilt from base + overlay every time rather than patched, so pushing ten times gives the same result as pushing once — hooks never accumulate.
+objects merge deeply and local scalars win. hook arrays concatenate, so the repo's hooks and the machine's hooks both run rather than one replacing the other. the live file is rebuilt from base plus overlay every time instead of being patched in place, which is why pushing repeatedly is indistinguishable from pushing once.
 
-the first push on a machine splits whatever is already in `settings.json` into the overlay for you, and verifies the split round-trips before writing anything. if it can't reproduce your current file exactly, it refuses and tells you.
+the first push on a machine splits whatever is already in `settings.json` into the overlay for you. before writing, it checks that merging the split back reproduces everything you had; if anything would be lost it refuses and tells you where to look.
 
-pull deliberately does **not** push settings back. deciding which live key is shared and which is machine-only is exactly the guess that causes the damage, so pull reports drift and lets you place it yourself.
+pull deliberately does not send settings back the other way. deciding which live key is shared and which is machine-only is exactly the guess that causes damage, so pull reports the drift and lets you place it yourself.
+
+## what CI checks
+
+cloning a config repo means letting someone else's shell scripts run on every prompt you type, and someone else's markdown into your model's context. that deserves more than a green check on "it parses", so the checks are built around the things that can actually hurt you.
+
+**the sync engine can delete your files.** its test suite runs against throwaway home directories, and most of it tests restraint rather than function: a symlinked skill survives a push, a machine-only skill survives a push, a hook you deleted comes back instead of vanishing, and repeated pushes converge instead of accumulating. it runs on linux, macos and windows, because path handling and symlink support are precisely where a node script quietly stops being portable.
+
+**markdown here becomes instructions.** the content scanner looks for invisible unicode, the failure mode human review cannot catch — a payload in the unicode tag block renders as nothing at all yet is still tokens to the model. when it finds one it decodes it, so the report shows what the hidden text actually said. it also flags zero-width characters, bidi overrides, instruction-override phrasing in anything loaded into context, and `curl | bash`-shaped patterns in the hooks. each rule runs only against the files that carry that risk, so nothing is exempt from its own check.
+
+**settings.json decides what claude may do without asking.** the same scanner rejects a `bypassPermissions` default, allow rules that pre-approve a whole tool with no argument filter, and hook commands that aren't `$HOME`-relative.
+
+the rest is ordinary hygiene: shellcheck over the shell, PSScriptAnalyzer over the powershell, frontmatter validated against claude code's real field lists, gitleaks across the full history, and [zizmor](https://docs.zizmor.sh) auditing the workflows themselves. actions are pinned to commit SHAs and every workflow starts from `permissions: {}`.
+
+one check exists purely because this repo got it wrong: an unanchored `debug/` in `.gitignore` also matched `skills/debug/`, so that skill sat untracked and invisible to anyone cloning. CI now fails if a skill exists on disk without being tracked by git.
+
+everything CI runs is a plain script in `scripts/` with no dependencies, so you can run the same checks locally and read what they do before trusting them.
+
+### context budget
+
+`node scripts/lint-skills.mjs` prints what this config costs you in context. skill names and descriptions load into the system prompt on **every** session whether or not the skill fires, while bodies load only on invocation — so a bloated description is a tax on every turn and a long body mostly isn't. the linter fails when a description exceeds the length at which claude code truncates the listing, and prints the current totals so you can see the trend rather than trusting a number written down here.
 
 ## customizing
 
-1. fork this repo
-2. edit `CLAUDE.md` with your preferences
-3. update `settings.json` — paths use `$HOME` which resolves at runtime. machine-specific values belong in `~/.claude/settings.local.json` instead
-4. add commands in `commands/`, skills in `skills/`, agents in `agents/`
-5. run `./scripts/sync.sh push`
+fork it, rewrite `CLAUDE.md` in your own voice, then add skills, agents and commands in their directories and run `./scripts/sync.sh push`.
+
+keep `settings.json` portable — use `$HOME` rather than absolute paths, and put anything true of only one machine in `~/.claude/settings.local.json`, which sync never overwrites and never commits.
 
 ## skills from elsewhere
 
-some of the skills in `~/.claude/skills` are symlinks into `~/.agents/skills` and are **not** managed by this repo — they come from [matt pocock's agent skills](https://github.com/mattpocock) (`codebase-design`, `diagnosing-bugs`, `domain-modeling`, `triage`, `to-spec`, `tdd`, `research`, `writing-for-agents`, and others). install them separately; sync leaves them alone by design.
-
-## structure
-
-```
-claude-config/
-├── CLAUDE.md
-├── settings.json
-├── keybindings.json
-├── statusline-command.sh
-├── agents/
-│   ├── code-reviewer.md
-│   └── code-simplifier.md
-├── commands/
-│   └── gac.md
-├── hooks/
-│   ├── file-size-watchdog.sh
-│   ├── pre-commit-validate.sh
-│   ├── prompt-refine.sh
-│   └── session-changelog.sh
-├── skills/
-│   ├── debug/
-│   ├── deploy/
-│   ├── design-system/
-│   ├── pr/
-│   ├── prompt-refine/
-│   ├── writing-pr-comments/
-│   └── writing-pr-descriptions/
-└── scripts/
-    ├── sync.mjs            # the engine
-    ├── sync.sh / sync.ps1  # wrappers
-    └── setup.sh / setup.ps1
-```
+some skills in `~/.claude/skills` are symlinks into `~/.agents/skills` and are **not** managed by this repo. they come from [matt pocock's skills](https://github.com/mattpocock/skills) — install those separately. sync leaves them alone by design, which is the main reason it refuses to delete anything it doesn't own.
