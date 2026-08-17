@@ -27,7 +27,9 @@ const LIVE = process.env.CLAUDE_HOME || join(homedir(), '.claude')
 // repo-owned entries. TREES are owned per top-level entry inside them, not
 // wholesale — ~/.claude/skills/tdd is invisible to us because the repo has no
 // skills/tdd. FILES are owned outright.
-const FILES = ['CLAUDE.md', 'keybindings.json', 'statusline-command.sh']
+// AGENTS.md holds the actual preferences and CLAUDE.md is a one-line import of
+// it. both have to land in ~/.claude or that import resolves to nothing.
+const FILES = ['CLAUDE.md', 'AGENTS.md', 'keybindings.json', 'statusline-command.sh']
 const TREES = ['agents', 'commands', 'hooks', 'skills']
 
 const SETTINGS = 'settings.json'

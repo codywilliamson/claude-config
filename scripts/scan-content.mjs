@@ -83,8 +83,9 @@ const isText = (f) => {
   }
 }
 
+// anything that reaches a model as instructions, wherever it lives
 const inContext = (f) =>
-  f === 'CLAUDE.md' || /^(skills|agents|commands)\//.test(f)
+  /^(CLAUDE|AGENTS)\.md$/.test(f) || /^(skills|agents|commands|\.claude)\//.test(f)
 const isShell = (f) => f.endsWith('.sh')
 
 const findings = []
