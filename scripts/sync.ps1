@@ -1,4 +1,4 @@
-# thin wrapper — all the logic lives in sync.mjs so there is one implementation
+﻿# thin wrapper — all the logic lives in sync.mjs so there is one implementation
 # to keep correct instead of one per platform.
 #
 #   .\scripts\sync.ps1 status          what differs, changes nothing

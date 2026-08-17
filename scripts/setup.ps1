@@ -1,4 +1,4 @@
-# first-time setup for claude-config (windows / powershell)
+﻿# first-time setup for claude-config (windows / powershell)
 # detects os, checks prerequisites, generates env, runs first sync
 #
 # usage:

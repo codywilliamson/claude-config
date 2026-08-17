@@ -84,10 +84,14 @@ function frontmatter(text, file) {
   return { fields: out, body }
 }
 
+// git checks these out with CRLF on windows, which is invisible until a parser
+// anchored on "---\n" declares every file broken
+const read = (p) => readFileSync(p, 'utf8').replace(/\r\n/g, '\n')
+
 function check(path, kind, expectedName) {
-  const file = path.slice(REPO.length + 1)
+  const file = path.slice(REPO.length + 1).replaceAll('\\', '/')
   const schema = SCHEMA[kind]
-  const parsed = frontmatter(readFileSync(path, 'utf8'), file)
+  const parsed = frontmatter(read(path), file)
   if (!parsed) return fail(file, 'missing YAML frontmatter (--- block at the top)')
   const { fields, body } = parsed
 

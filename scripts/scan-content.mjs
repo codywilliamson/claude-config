@@ -92,7 +92,8 @@ const add = (sev, file, line, what, detail) => findings.push({ sev, file, line, 
 
 for (const file of tracked) {
   if (!isText(file)) continue
-  const text = readFileSync(join(REPO, file), 'utf8')
+  // normalise CRLF so line-anchored patterns behave the same on every platform
+  const text = readFileSync(join(REPO, file), 'utf8').replace(/\r\n/g, '\n')
   const lines = text.split('\n')
 
   // invisible unicode — every file
