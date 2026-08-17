@@ -6,26 +6,27 @@
 
 One [Claude Code](https://docs.anthropic.com/en/docs/claude-code) setup, versioned in Git and reproduced on every machine you work from. Instructions, settings, skills, agents and hooks live here; a single command puts them in place and keeps whatever is specific to that machine intact.
 
-Runs on Linux, macOS and Windows. The sync engine is one Node script rather than one implementation per platform, and CI runs its test suite on all three.
+Runs on Linux, macOS and Windows.
+
+Config like this is worth being suspicious of. Cloning it means letting someone else's shell scripts run on every prompt you type, and someone else's markdown into your model's context. So every push is checked for hidden prompt injection, unsafe patterns in the hooks, and permission settings that pre-approve too much, and the sync engine is tested on all three platforms to prove it never deletes anything it does not own. [Safety](#safety) covers what that means in practice.
 
 ## What's here
 
 The repo mirrors the shape of `~/.claude`, so a directory here lands at the same path there.
 
-`CLAUDE.md` carries the global instructions applied to every session, and `settings.json` is the shared base for permissions, hooks and the statusline. `skills/`, `agents/` and `commands/` hold the things Claude can invoke. `hooks/` holds shell scripts that Claude Code runs on session events. `scripts/` has the sync engine, first-time setup, and the checks CI runs.
-
-For what any of those currently contain, read the directory. This file deliberately keeps no inventory, because an inventory in a README is a list that goes stale the moment anyone touches anything.
+`AGENTS.md` carries the global instructions applied to every session, and `CLAUDE.md` imports it so Claude Code picks up the same text. `settings.json` is the shared base for permissions, hooks and the statusline. `skills/`, `agents/` and `commands/` hold the things Claude can invoke. `hooks/` holds shell scripts that Claude Code runs on session events. `scripts/` has the sync engine, first-time setup, and the checks CI runs.
 
 ## Setup
 
 ```bash
-git clone https://github.com/codywilliamson/claude-config.git ~/dev/claude-config
+git clone https://github.com/codywilliamson/claude-config.git
+cd claude-config
 
 # Linux / macOS / WSL
-bash ~/dev/claude-config/scripts/setup.sh
+bash scripts/setup.sh
 
 # Windows
-~/dev/claude-config/scripts/setup.ps1
+.\scripts\setup.ps1
 ```
 
 Setup detects your platform, checks prerequisites, writes a gitignored `.env.local`, and runs the first sync.
@@ -62,7 +63,7 @@ Every check is a dependency-free script in `scripts/`, so you can read it and ru
 
 ## Customizing
 
-Fork it, rewrite `CLAUDE.md` in your own voice, add skills, agents and commands in their directories, then run `./scripts/sync.sh push`.
+Fork it, rewrite `AGENTS.md` in your own voice, add skills, agents and commands in their directories, then run `./scripts/sync.sh push`.
 
 Keep `settings.json` portable — use `$HOME` rather than absolute paths, and put anything true of only one machine in `~/.claude/settings.local.json`, which sync never overwrites and Git never sees.
 
