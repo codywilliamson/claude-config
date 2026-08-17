@@ -14,7 +14,7 @@
 
 import { execFileSync } from 'node:child_process'
 import {
-  copyFileSync, existsSync, lstatSync, mkdirSync, readdirSync,
+  chmodSync, copyFileSync, existsSync, lstatSync, mkdirSync, readdirSync,
   readFileSync, rmSync, writeFileSync,
 } from 'node:fs'
 import { homedir } from 'node:os'
@@ -83,6 +83,22 @@ function mergeSettings(base, local, path = []) {
     else out[k] = lv
   }
   return out
+}
+
+// does `next` preserve everything `live` had? extra keys contributed by the
+// base are fine — that's the point of pushing. silently dropping or changing
+// something the machine already had is not, so that's what we check for.
+function covers(next, live, path = []) {
+  if (isObj(live)) {
+    if (!isObj(next)) return false
+    return Object.entries(live).every(([k, v]) => covers(next[k], v, [...path, k]))
+  }
+  if (isHookList(path) && Array.isArray(live)) {
+    if (!Array.isArray(next)) return false
+    const have = new Set(next.map((x) => JSON.stringify(canon(x))))
+    return live.every((x) => have.has(JSON.stringify(canon(x))))
+  }
+  return same(next, live)
 }
 
 // inverse of mergeSettings: everything in `live` that `base` doesn't explain.
@@ -217,9 +233,10 @@ function pushSettings(dryRun) {
   if (local === null) {
     const live = readJson(livePath)
     local = live ? extractLocal(live, base) : {}
-    if (live && !same(mergeSettings(base, local), live)) {
-      err(`cannot split ${SETTINGS} cleanly — refusing to touch it`)
-      err(`  merge(base, extracted) != current live file. inspect ${livePath} by hand.`)
+    if (live && !covers(mergeSettings(base, local), live)) {
+      err(`cannot split ${SETTINGS} without losing something — refusing to touch it`)
+      err(`  inspect ${livePath} by hand, or move the machine-only keys into`)
+      err(`  ${localPath} yourself and run push again.`)
       return
     }
     if (!dryRun) writeJson(localPath, local)
@@ -314,7 +331,8 @@ if (cmd === 'push') {
 
   if (!dryRun) {
     for (const f of listDir(join(LIVE, 'hooks'))) {
-      if (f.endsWith('.sh')) execFileSync('chmod', ['+x', join(LIVE, 'hooks', f)])
+      // chmodSync, not a chmod subprocess: there is no chmod on windows
+      if (f.endsWith('.sh')) chmodSync(join(LIVE, 'hooks', f), 0o755)
     }
   }
   if (!noPlugins && !dryRun) installPlugins()
