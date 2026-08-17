@@ -20,9 +20,11 @@
 !skills/
 !skills/**
 
-# Track sync scripts
+# Track sync scripts and documentation
 !scripts/
 !scripts/**
+!docs/
+!docs/**
 
 # Never commit credentials or sensitive data
 .credentials.json
