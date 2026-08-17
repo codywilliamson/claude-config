@@ -4,6 +4,7 @@
 //   node sync.mjs status        show what differs, changes nothing
 //   node sync.mjs push          repo -> ~/.claude
 //   node sync.mjs pull          ~/.claude -> repo
+//   node sync.mjs adopt         re-derive settings.local.json from the live file
 //
 // flags: --dry-run  --no-plugins  --git (git pull --ff-only first)
 //
@@ -213,13 +214,13 @@ function planFiles(from, to) {
   return plan
 }
 
-function backupLive(dryRun) {
-  const src = join(LIVE, SETTINGS)
+function backup(file, dryRun) {
+  const src = join(LIVE, file)
   if (!existsSync(src) || dryRun) return
   const dir = join(LIVE, 'backups')
   mkdirSync(dir, { recursive: true })
   const stamp = new Date().toISOString().replace(/[:.]/g, '-')
-  copyFileSync(src, join(dir, `settings.${stamp}.json`))
+  copyFileSync(src, join(dir, `${file.replace(/\.json$/, '')}.${stamp}.json`))
 }
 
 function pushSettings(dryRun) {
@@ -250,9 +251,58 @@ function pushSettings(dryRun) {
   const live = readJson(livePath)
   if (same(next, live)) return ok(`${SETTINGS} already matches base + local`)
 
-  backupLive(dryRun)
+  backup(SETTINGS, dryRun)
   if (!dryRun) writeJson(livePath, next)
   ok(`${SETTINGS} regenerated from base + ${SETTINGS_LOCAL}`)
+}
+
+// what changed between two overlays, in terms a human can act on
+function overlayDiff(before, after) {
+  const out = []
+  for (const k of new Set([...Object.keys(before), ...Object.keys(after)])) {
+    if (same(before[k], after[k])) continue
+    if (k === 'hooks') {
+      const b = before.hooks ?? {}
+      const a = after.hooks ?? {}
+      for (const ev of new Set([...Object.keys(b), ...Object.keys(a)])) {
+        if (same(b[ev], a[ev])) continue
+        out.push(`hooks.${ev}: ${(b[ev] ?? []).length} -> ${(a[ev] ?? []).length}`)
+      }
+    } else if (!(k in after)) out.push(`${k}: removed`)
+    else if (!(k in before)) out.push(`${k}: added`)
+    else out.push(`${k}: changed`)
+  }
+  return out
+}
+
+// the overlay is a snapshot taken on first push. anything that manages its own
+// entries in settings.json — a plugin, an agent runner, claude code itself —
+// edits the live file on its own schedule, and the snapshot goes stale. left
+// alone, the next push resurrects entries that tool deliberately removed.
+// adopt re-derives the overlay from whatever is live right now.
+function adoptSettings(dryRun) {
+  const base = readJson(join(REPO, SETTINGS))
+  if (!base) return warn(`no ${SETTINGS} in repo — nothing to diff against`)
+  const live = readJson(join(LIVE, SETTINGS))
+  if (!live) return warn(`no ${SETTINGS} in ${LIVE} — nothing to adopt`)
+
+  const localPath = join(LIVE, SETTINGS_LOCAL)
+  const current = readJson(localPath) ?? {}
+  const next = extractLocal(live, base)
+
+  if (!covers(mergeSettings(base, next), live)) {
+    err(`cannot re-derive ${SETTINGS_LOCAL} without losing something — refusing`)
+    err(`  inspect ${join(LIVE, SETTINGS)} by hand.`)
+    return
+  }
+
+  const changes = overlayDiff(current, next)
+  if (!changes.length) return ok(`${SETTINGS_LOCAL} already matches the live file`)
+
+  for (const line of changes) info(`  ${line}`)
+  backup(SETTINGS_LOCAL, dryRun)
+  if (!dryRun) writeJson(localPath, next)
+  ok(`${SETTINGS_LOCAL} re-derived from the live ${SETTINGS}`)
 }
 
 // settings never auto-flows back. guessing which live key is shared and which
@@ -267,7 +317,8 @@ function pullSettings() {
   const drift = extractLocal(live, mergeSettings(base, local))
   warn(`${SETTINGS} has live changes in neither the base nor the overlay:`)
   for (const k of Object.keys(drift)) console.log(`    ${k}`)
-  info(`  shared? edit ${join(REPO, SETTINGS)}. machine-only? edit ${join(LIVE, SETTINGS_LOCAL)}.`)
+  info(`  shared? edit ${join(REPO, SETTINGS)}`)
+  info(`  machine-only? run: sync adopt`)
 }
 
 function installPlugins() {
@@ -358,6 +409,11 @@ if (cmd === 'push') {
   }
   console.log('')
   info(`review with: git -C ${REPO} diff`)
+} else if (cmd === 'adopt') {
+  header(`adopt  ${LIVE}/${SETTINGS} -> ${SETTINGS_LOCAL}`)
+  if (dryRun) info('dry run, nothing will be written')
+  adoptSettings(dryRun)
+  console.log('')
 } else if (cmd === 'status') {
   header('status')
   const push = planFiles(REPO, LIVE)
@@ -367,17 +423,20 @@ if (cmd === 'push') {
   const base = readJson(join(REPO, SETTINGS))
   const local = readJson(join(LIVE, SETTINGS_LOCAL))
   const live = readJson(join(LIVE, SETTINGS))
+  let settingsDrifted = false
   if (base && live) {
-    const synced = same(mergeSettings(base, local || {}), live)
-    console.log(`  settings.json       ${synced ? 'in sync' : 'differs'}${local ? '' : `  (no ${SETTINGS_LOCAL} yet)`}`)
+    settingsDrifted = !same(mergeSettings(base, local || {}), live)
+    console.log(`  settings.json       ${settingsDrifted ? 'differs' : 'in sync'}${local ? '' : `  (no ${SETTINGS_LOCAL} yet)`}`)
   }
   const extra = untracked()
   if (extra.length) console.log(`  untracked locally   ${extra.length} entry(s)`)
   console.log('')
-  info('push:  node scripts/sync.mjs push')
-  info('pull:  node scripts/sync.mjs pull')
+  info('push:   node scripts/sync.mjs push')
+  info('pull:   node scripts/sync.mjs pull')
+  // only worth suggesting when there is actually drift to absorb
+  if (settingsDrifted) info('adopt:  node scripts/sync.mjs adopt   (absorb live settings drift)')
 } else {
   err(`unknown command: ${cmd}`)
-  console.log('usage: sync.mjs [status|push|pull] [--dry-run] [--no-plugins]')
+  console.log('usage: sync.mjs [status|push|pull|adopt] [--dry-run] [--no-plugins] [--git]')
   process.exit(1)
 }

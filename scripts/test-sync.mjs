@@ -222,6 +222,82 @@ t('a hook the machine deleted is restored, not lost', () => {
   assert.ok(readJson(join(home, 'settings.json')).hooks[event], 'repo hook back')
 })
 
+console.log('\nadopt')
+
+t('adopt absorbs a key another tool added to the live file', () => {
+  const home = newHome()
+  sync(home, 'push')
+  const live = readJson(join(home, 'settings.json'))
+  live.addedByAnotherTool = { enabled: true }
+  writeFileSync(join(home, 'settings.json'), JSON.stringify(live, null, 2))
+
+  sync(home, 'adopt')
+  assert.deepEqual(
+    readJson(join(home, 'settings.local.json')).addedByAnotherTool,
+    { enabled: true },
+    'landed in the overlay',
+  )
+  assert.match(sync(home, 'push'), /already matches base \+ local/, 'push is now a no-op')
+})
+
+// the case this command exists for: a tool registers hooks, then a later
+// version of it deregisters some. without adopt, the stale overlay makes the
+// next push put them back.
+t('adopt drops a hook the owning tool removed, and push does not resurrect it', () => {
+  const home = newHome()
+  sync(home, 'push')
+  writeFileSync(join(home, 'settings.local.json'), JSON.stringify({
+    hooks: { Notification: [{ matcher: '', hooks: [{ type: 'command', command: 'echo tool' }] }] },
+  }))
+  sync(home, 'push')
+  assert.ok(readJson(join(home, 'settings.json')).hooks.Notification, 'tool hook is live')
+
+  // the tool updates itself and deregisters
+  const live = readJson(join(home, 'settings.json'))
+  delete live.hooks.Notification
+  writeFileSync(join(home, 'settings.json'), JSON.stringify(live, null, 2))
+
+  sync(home, 'adopt')
+  assert.ok(!readJson(join(home, 'settings.local.json')).hooks?.Notification, 'dropped from overlay')
+
+  sync(home, 'push')
+  assert.ok(!readJson(join(home, 'settings.json')).hooks?.Notification, 'not resurrected')
+})
+
+t('adopt never discards a repo hook the base still defines', () => {
+  const home = newHome()
+  sync(home, 'push')
+  const base = readJson(join(REPO, 'settings.json'))
+  const event = Object.keys(base.hooks ?? {})[0]
+  sync(home, 'adopt')
+  const overlay = readJson(join(home, 'settings.local.json'))
+  assert.ok(!overlay.hooks?.[event], "base hook stays out of the overlay")
+  sync(home, 'push')
+  assert.deepEqual(
+    readJson(join(home, 'settings.json')).hooks[event],
+    base.hooks[event],
+    'base hook survives the round trip',
+  )
+})
+
+t('adopt is idempotent and reports no change', () => {
+  const home = newHome()
+  sync(home, 'push')
+  sync(home, 'adopt')
+  assert.match(sync(home, 'adopt'), /already matches the live file/)
+})
+
+t('adopt --dry-run writes nothing', () => {
+  const home = newHome()
+  sync(home, 'push')
+  const live = readJson(join(home, 'settings.json'))
+  live.addedByAnotherTool = true
+  writeFileSync(join(home, 'settings.json'), JSON.stringify(live, null, 2))
+  const before = readFileSync(join(home, 'settings.local.json'), 'utf8')
+  sync(home, 'adopt', '--dry-run')
+  assert.equal(readFileSync(join(home, 'settings.local.json'), 'utf8'), before)
+})
+
 console.log('\npull')
 
 t('pull leaves settings.json alone', () => {

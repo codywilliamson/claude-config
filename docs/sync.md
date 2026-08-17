@@ -6,6 +6,7 @@ The repo and `~/.claude` hold the same shape, and `scripts/sync.mjs` moves files
 ./scripts/sync.sh status    # what differs, in both directions. Writes nothing
 ./scripts/sync.sh push      # repo -> ~/.claude
 ./scripts/sync.sh pull      # ~/.claude -> repo, then review with git diff
+./scripts/sync.sh adopt     # re-derive settings.local.json from the live file
 ```
 
 Use `scripts/sync.ps1` on Windows. Add `--git` to `push` to run `git pull --ff-only` first, `--dry-run` to print the plan without writing, and `--no-plugins` to skip the plugin install pass.
@@ -47,6 +48,25 @@ The live file is rebuilt from base plus overlay every time rather than patched i
 Your machine already has a `settings.json` before sync ever runs. The first push splits it: anything the repo's base does not explain becomes your overlay.
 
 Before writing, it checks that merging the split back preserves everything you had. The check is coverage, not equality — the merged result is allowed to contain *more* than you started with, since gaining the repo's hooks is the point, but it may never contain less. If anything would be lost it refuses and tells you where to look.
+
+### When another tool edits settings.json
+
+The overlay is a snapshot, taken once on first push. That holds until something else starts managing its own entries in `settings.json` — a plugin, an agent runner, Claude Code itself. Those tools edit the live file on their own schedule, and the snapshot goes stale.
+
+The failure is quiet and specific. A tool registers hooks on fourteen events, a later version deregisters two, and your overlay still lists all fourteen. The next push faithfully restores what the tool deliberately removed, the tool removes them again on its next update, and the two of them trade edits indefinitely.
+
+`sync adopt` re-derives the overlay from whatever is live right now. It prints what changed before writing, backs up the previous overlay to `~/.claude/backups/`, and refuses if the result would not preserve everything the live file currently has.
+
+```
+$ ./scripts/sync.sh adopt
+→   hooks.UserPromptSubmit: 1 -> 0
+→   hooks.TaskCreated: 1 -> 0
+✓ settings.local.json re-derived from the live settings.json
+```
+
+`status` only suggests it when there is actual drift to absorb. Run it after installing or updating anything that writes to `settings.json`, and after changing settings through Claude Code's own UI.
+
+Adopt reads the live file and the repo's base. It never writes to the repo, so it cannot turn a machine-local setting into a shared one by accident.
 
 ### Why pull leaves settings alone
 

@@ -39,6 +39,7 @@ You need Git and Node. Node is not really an extra ask, since Claude Code instal
 ./scripts/sync.sh status    # What differs, in both directions. Writes nothing
 ./scripts/sync.sh push      # repo -> ~/.claude
 ./scripts/sync.sh pull      # ~/.claude -> repo, then review with git diff
+./scripts/sync.sh adopt     # Absorb settings another tool changed
 ```
 
 Use `scripts/sync.ps1` on Windows. Sitting down at another machine, `push --git` pulls the latest first, so one command gets you current.
