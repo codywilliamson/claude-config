@@ -32,17 +32,21 @@
 # sync.mjs merges this over the repo's settings.json to produce the live file.
 settings.local.json
 
-# Ignore runtime/cache directories
-cache/
-debug/
-downloads/
-file-history/
-history.jsonl
-ide/
-plans/
-projects/
-shell-snapshots/
-stats-cache.json
-statsig/
-telemetry/
-todos/
+# Ignore runtime/cache directories.
+# Leading slash matters: an unanchored `debug/` also matches `skills/debug/`,
+# which silently kept that skill out of the repo for months.
+/cache/
+/debug/
+/downloads/
+/file-history/
+/history.jsonl
+/ide/
+/plans/
+/projects/
+/shell-snapshots/
+/stats-cache.json
+/statsig/
+/telemetry/
+/todos/
+!.github/
+!.github/**
