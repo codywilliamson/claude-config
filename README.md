@@ -60,6 +60,8 @@ Every check is a dependency-free script in `scripts/`, so you can read it and ru
 
 ## Statusline
 
+![The statusline: working directory, Git branch, model, session cost, elapsed time, commits today, and a context-usage bar](docs/statusline.png)
+
 `statusline-command.sh` renders the working directory, Git branch, active model, session cost and elapsed time, commits made today, and a context-usage bar. Segments that carry no information yet hide themselves, so a fresh session stays quiet. It needs a Nerd Font for the glyphs.
 
 ## Customizing
