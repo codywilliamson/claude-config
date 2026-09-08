@@ -223,6 +223,30 @@ function backup(file, dryRun) {
   copyFileSync(src, join(dir, `${file.replace(/\.json$/, '')}.${stamp}.json`))
 }
 
+// on windows a bare `bash` on PATH is WSL's, which can't read a C:/ path and
+// exits 127 — so `bash $HOME/.claude/statusline-command.sh` silently renders
+// nothing. resolve the launcher to git bash instead. returns null off windows
+// or when git bash isn't found, and the caller then leaves the command alone.
+function gitBashPath() {
+  if (process.platform !== 'win32') return null
+  if (process.env.CLAUDE_GIT_BASH && existsSync(process.env.CLAUDE_GIT_BASH)) {
+    return process.env.CLAUDE_GIT_BASH
+  }
+  const candidates = [
+    'C:/Program Files/Git/bin/bash.exe',
+    'C:/Program Files (x86)/Git/bin/bash.exe',
+    join(process.env.LOCALAPPDATA || '', 'Programs', 'Git', 'bin', 'bash.exe'),
+  ]
+  for (const c of candidates) if (c && existsSync(c)) return c
+  // last resort: derive from git itself (…/Git/cmd/git.exe → …/Git/bin/bash.exe)
+  try {
+    const git = execFileSync('where', ['git'], { encoding: 'utf8' }).split(/\r?\n/)[0].trim()
+    const bash = git && join(dirname(dirname(git)), 'bin', 'bash.exe')
+    if (bash && existsSync(bash)) return bash
+  } catch { /* git not on PATH — nothing to derive from */ }
+  return null
+}
+
 function pushSettings(dryRun) {
   const base = readJson(join(REPO, SETTINGS))
   if (!base) return warn(`no ${SETTINGS} in repo — skipping`)
@@ -245,6 +269,20 @@ function pushSettings(dryRun) {
     if (!dryRun) writeJson(localPath, local)
     const n = Object.keys(local).length
     ok(`created ${SETTINGS_LOCAL} with ${n} machine-local key${n === 1 ? '' : 's'}`)
+  }
+
+  // windows: the base statusLine runs `bash`, which resolves to WSL and fails on
+  // a C:/ path. seed a machine-local override that launches git bash directly.
+  // only when the overlay doesn't already set statusLine, so it stays idempotent
+  // and never clobbers a hand-written one. no-op off windows (bash is null).
+  if (!local.statusLine) {
+    const bash = gitBashPath()
+    if (bash) {
+      const script = join(LIVE, 'statusline-command.sh').replace(/\\/g, '/')
+      local.statusLine = { command: `"${bash.replace(/\\/g, '/')}" ${script}` }
+      if (!dryRun) writeJson(localPath, local)
+      ok(`seeded git-bash statusLine into ${SETTINGS_LOCAL} (windows)`)
+    }
   }
 
   const next = mergeSettings(base, local)
