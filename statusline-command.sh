@@ -7,7 +7,8 @@ input=$(cat)
 get_json() {
   local key="$1"
   # match "key": "value" or "key": number
-  echo "$input" | grep -o "\"$key\"[[:space:]]*:[[:space:]]*[\"0-9][^,}]*" | head -1 | sed 's/.*:[[:space:]]*"\{0,1\}//;s/"\{0,1\}[[:space:]]*$//'
+  # anchor the strip to the key so a value's own colon (windows C:/…) survives
+  echo "$input" | grep -o "\"$key\"[[:space:]]*:[[:space:]]*[\"0-9][^,}]*" | head -1 | sed 's/^"[^"]*"[[:space:]]*:[[:space:]]*"\{0,1\}//;s/"\{0,1\}[[:space:]]*$//'
 }
 
 cwd=$(get_json "current_dir")
