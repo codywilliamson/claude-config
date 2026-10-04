@@ -74,6 +74,8 @@ Keep `settings.json` portable — use `$HOME` rather than absolute paths, and pu
 
 Some skills in `~/.claude/skills` are symlinks into `~/.agents/skills` and are **not** managed by this repo. They come from [Matt Pocock's skills](https://github.com/mattpocock/skills), installed separately. Sync leaves them alone by design, which is the main reason it refuses to delete anything it does not own.
 
+Skills built from copyrighted material stay in private repos and are cloned straight into `~/.claude/skills/<name>`. For example, the C# book skill lives in `codywilliamson/csharp-12-nutshell-skill` (private). Sync ignores these the same way.
+
 ## Documentation
 
 - [How syncing works](docs/sync.md)
