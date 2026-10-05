@@ -8,7 +8,7 @@ Beautiful in a terminal, boring when piped. The same run has to read well to a h
 |---|---|---|
 | `Json` | `--json` | one JSON object per line on stdout, source-gen serialized |
 | `Plain` | `--plain`, `CI` set, or stdout redirected | no escape bytes, stable line prefixes |
-| `Agent` | agent env var (`CLAUDECODE`, `CODEX_*`) | plain plus a one-line summary footer and a higher default limit |
+| `Agent` | `--agent` or agent env var (`CLAUDECODE`, `CODEX_*`) | plain, never prompts, plus a one-line stderr footer (counts, elapsed, truncation + flag for more) |
 | `GitHubActions` | `GITHUB_ACTIONS=true` | plain plus `::group::`, `::warning::`, `::error::` and a `$GITHUB_STEP_SUMMARY` append |
 | `Pretty` | everything else (TTY) | color, spinners, links |
 

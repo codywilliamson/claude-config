@@ -25,4 +25,5 @@ return 0;
 - On Windows, the AOT link step fails with `'vswhere.exe' is not recognized` unless `%ProgramFiles(x86)%\Microsoft Visual Studio\Installer` is on PATH. A hello-world publishes to about 1 MB.
 - On Unix, `chmod +x` plus the shebang makes `./tool.cs` run directly.
 - The output rules from the main skill still apply at script size: results go to stdout and errors to stderr. Skip color when stdout is redirected (`Console.IsOutputRedirected`), and print `✓`/`✗` with durations for multi-step work.
+- Agents run scripts too. Treat `CLAUDECODE`/`CODEX_*` like redirected stdout (plain, no color), support `--json` (one line per result via a source-gen context in the same file), print a one-line summary to stderr, put an example in the usage text, and never prompt.
 - Run `dotnet project convert tool.cs` once the script outgrows a single file, then adopt the tool layout.

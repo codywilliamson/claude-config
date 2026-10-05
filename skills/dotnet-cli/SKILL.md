@@ -50,6 +50,14 @@ Every command is `sealed class XCommand(RunContext run)` with `Task<ExitCode> Ru
 - Plain mode emits zero escape bytes. Live widgets (spinners, progress) only in pretty mode, never when stdout is redirected.
 - Results go to stdout, everything else (progress, warnings, errors) to stderr.
 
+**Agents are first-class users**
+- Agent mode (agent env var or `--agent`) means plain output, no prompts and no spinners, plus one summary footer line on stderr: counts, elapsed time, and truncation with the exact flag to get more (`showing 20 of 312, pass --limit 0 for all`).
+- Never block on input. Anything that would prompt fails fast with exit `2` and names the flag (`--yes`) when stdin is redirected or in agent mode.
+- `--json` on every data command: one object per line, snake_case, stable fields, deterministic order, relative paths. Errors in json mode are also JSON on stderr: `{"error","hint","exit_code"}`.
+- Hints are literal next commands where possible (`try: name stats ./src`).
+- Ship `skills/<name>/SKILL.md` in the repo, embedded in the exe and printed by `name skill`. An e2e test fails when a command in `--help` is missing from it.
+- Add an MCP server (`name mcp`, stdio) when agents will call the tool repeatedly inside a session.
+
 **Errors and exit codes**
 - One typed exception for expected failures carrying `Message`, `Hint` and `ExitCode`. The app's single error boundary prints `✗ message` + `hint: ...` and returns the code. A stack trace means a bug.
 - Exit codes are a documented enum: `0` success, `1` failed / no results, `2` usage, then tool-specific codes from `3`. The parser returns its own codes on bad args, so track whether an action ran and map parser failures to `2`.
