@@ -47,7 +47,12 @@ Avoid unless there is a reason: em and en dashes, "not just X but Y" framing, tr
 - Readability: named constants over magic values, plain-English function names
 - Keep files small and focused. Split when they get large, since bloat costs context
 - Prefer editing existing files over creating new ones
-- Prefer TypeScript, prefer pnpm
+- Prefer TypeScript for web and JS work, prefer pnpm
+
+## .NET Tools
+
+- C# is the default for new CLIs, tools and non-trivial scripts. Publish NativeAOT when dependencies allow, and use .NET 10 file-based apps (`dotnet run tool.cs`) for one-file scripts
+- Load the `dotnet-cli` skill before creating or changing one, and `dotnet-perf` for hot paths
 
 ## Scope
 
